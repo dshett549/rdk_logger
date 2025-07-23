@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
     if(0 != strcmp("Receiver",argv[1])) {
         if( (0 != strncmp(argv[2],COMP_SIGNATURE,COMP_SIGNATURE_LEN)) ||
-                (0 != validate_module_name(argv[2])) ) {
+                (0 != strncmp(argv[2], "LOG.RDK.", 8))) {
             printf("Invalid module name\n");
             usage(argv[0]);
             return -1;

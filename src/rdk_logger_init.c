@@ -100,6 +100,15 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
     return RDK_SUCCESS;
 }
 
+rdk_Error rdk_logger_ext_init(rdk_logger_ext_config_t* cfg)
+ {
+     if (!cfg || !cfg->module) {
+         printf("Invalid config\n");
+         return;
+     }
+     rdk_dbg_priv_ext_Init(cfg->loglevel, cfg->module, cfg->logdir, cfg->fileName, cfg->maxCount, cfg->maxSize);
+ }
+
 /**
  * @brief Cleanup the logger instantiation.
  *
