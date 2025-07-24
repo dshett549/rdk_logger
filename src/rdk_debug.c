@@ -129,7 +129,7 @@ void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
 {
     static char initialized_modules[256][64] = {0};
      int found = 0;
-     for (int i = 0; i < 256;   i) {
+     for (int i = 0; i < 256;++i) {
          if (initialized_modules[i][0] == '\0') break;
          if (strcmp(initialized_modules[i], module) == 0) {
              found = 1;
@@ -137,7 +137,7 @@ void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
          }
      }
      if (!found) {
-         for (int i = 0; i < 256;   i) {
+         for (int i = 0; i < 256;++i) {
              if (initialized_modules[i][0] == '\0') {
                  strncpy(initialized_modules[i], module, sizeof(initialized_modules[i])-1);
                  // Prepare config for this module

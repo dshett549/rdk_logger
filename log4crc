@@ -34,6 +34,6 @@
 
     <appender name="stdout" type="stream_env" layout="basic"/>-->
 
-    <category name="LOG.RDK" priority="warning" appender="RI_rollingfileappender"/>
+    <category name="LOG.RDK" priority="warning" appender="stdout"/>
 
 </log4c>

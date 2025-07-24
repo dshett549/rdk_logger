@@ -150,9 +150,6 @@
 #include <stdio.h>
 #include "rdk_logger_types.h"
 #include "rdk_error.h"
-#include <log4c/appender_type_rollingfile.h>
-#include <log4c/rollingpolicy.h>
-#include <log4c/rollingpolicy_type_sizewin.h>
 #ifdef __cplusplus
 extern "C"
 {
@@ -203,9 +200,9 @@ typedef enum
 
 typedef struct rdk_logger_ext_config_t
  {
-     char fileName[128];
-     char logdir[16];
-     char module[128];
+     char fileName[32];
+     char logdir[32];
+     char module[32];
      long maxSize;
      long maxCount;
      rdk_LogLevel loglevel;

@@ -54,6 +54,9 @@
 #include "rdk_dynamic_logger.h"
 #include "log4c.h"
 #include <rdk_utils.h>
+#include <log4c/appender_type_rollingfile.h>
+#include <log4c/rollingpolicy.h>
+#include <log4c/rollingpolicy_type_sizewin.h>
 
 #ifdef SYSTEMD_JOURNAL
 #include <systemd/sd-journal.h>
@@ -82,13 +85,20 @@ static int rdk_logLevel_to_log4c_priority(int level) {
      }
  }
 
+static rdk_logger_Bool rdk_logger_is_logLevel_enabled_debug_ini(const char *module, rdk_LogLevel level)
+{
+    // Always use LOG.RDK.DEFAULT (index 0) for all modules
+    return (rdk_g_logControlTbl[0] & (1 << level)) ? TRUE : FALSE;
+}
+
 /**
  * Returns 1 if logging has been requested for the corresponding module (mod)
  * and level (lvl) combination. To be used in rdk_dbg_priv_* files ONLY.
  */
+
 #define WANT_LOG(module_name, level) \
-     (log4c_category_get(module_name) && \
-      (rdk_logLevel_to_log4c_priority(level) <= log4c_category_get_priority(log4c_category_get(module_name))))
+    (log4c_category_get(module_name) && \
+     (rdk_logLevel_to_log4c_priority(level) <= log4c_category_get_priority(log4c_category_get(module_name)))
 
 /** Skip whitespace in a c-style string. */
 #define SKIPWHITE(cptr) while ((*cptr != '\0') && isspace(*cptr)) cptr++
@@ -208,9 +218,9 @@ void rdk_dbg_priv_Init()
 
 void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize)
  {
-     char fileName[256];
-     char fullpath[256];
-     char cat_name[256];
+     char fileName[32];
+     char fullpath[32];
+     char cat_name[32];
 
      snprintf(cat_name, sizeof(cat_name), "%s", module);
      snprintf(fileName, sizeof(fileName), "%s.txt", log_file_name + 8);
