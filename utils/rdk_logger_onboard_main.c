@@ -47,17 +47,15 @@ int main( int argc, char **argv)
 
 int main ()
  {
-     /*rdklogger_config config;
+     rdk_logger_ext_config_t config;
      strncpy(config.fileName, "test.txt", sizeof(config.fileName));
-     strncpy(config.location, "/tmp/", sizeof(config.location));
+     strncpy(config.logdir, "/tmp/", sizeof(config.logdir));
      strncpy(config.module, "TEST", sizeof(config.module));
      config.maxSize = 2024;  // 1 MB
      config.maxCount = 2;
-     config.loglevel = RDK_LOG_INFO;*/
-     rdk_logger_init("/home/deepthi/DEE-rdklogger/rdk_logger/debug.ini");
-     //rdk_logger_ext_init(config);
+     config.loglevel = RDK_LOG_INFO;
+     rdk_logger_ext_init(&config);
      for (int i =0; i < 5000; i++)
-     //while(1)
      {
          RDK_LOG(RDK_LOG_INFO, "LOG.RDK.DEEP", "DEEPLOG\n");
          RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.DEEP", "DEBUGLOG\n");

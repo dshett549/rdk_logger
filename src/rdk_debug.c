@@ -127,35 +127,6 @@ void rdk_dbgDeinit()
 void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
         const char *format, ...)
 {
-    static char initialized_modules[256][64] = {0};
-     int found = 0;
-     for (int i = 0; i < 256;++i) {
-         if (initialized_modules[i][0] == '\0') break;
-         if (strcmp(initialized_modules[i], module) == 0) {
-             found = 1;
-             break;
-         }
-     }
-     if (!found) {
-         for (int i = 0; i < 256;++i) {
-             if (initialized_modules[i][0] == '\0') {
-                 strncpy(initialized_modules[i], module, sizeof(initialized_modules[i])-1);
-                 // Prepare config for this module
-                 rdk_logger_ext_config_t cfg;
-                 memset(&cfg, 0, sizeof(cfg));
-                 strncpy(cfg.module, module, sizeof(cfg.module) - 1);
-                 strncpy(cfg.logdir, "/tmp", sizeof(cfg.logdir) - 1);
-                 strncpy(cfg.fileName, module, sizeof(cfg.fileName) - 1);
-                 cfg.loglevel = level;
-                 cfg.maxCount = 2;
-                 cfg.maxSize = 2097152;
-
-                 // Call the new init function
-                 rdk_logger_ext_init(&cfg);
-                 break;
-             }
-         }
-     }
 #if !defined(RDK_LOG_DISABLE)
     int num;
     va_list args;

@@ -85,20 +85,13 @@ static int rdk_logLevel_to_log4c_priority(int level) {
      }
  }
 
-static rdk_logger_Bool rdk_logger_is_logLevel_enabled_debug_ini(const char *module, rdk_LogLevel level)
-{
-    // Always use LOG.RDK.DEFAULT (index 0) for all modules
-    return (rdk_g_logControlTbl[0] & (1 << level)) ? TRUE : FALSE;
-}
-
 /**
  * Returns 1 if logging has been requested for the corresponding module (mod)
  * and level (lvl) combination. To be used in rdk_dbg_priv_* files ONLY.
  */
-
 #define WANT_LOG(module_name, level) \
     (log4c_category_get(module_name) && \
-     (rdk_logLevel_to_log4c_priority(level) <= log4c_category_get_priority(log4c_category_get(module_name)))
+     (rdk_logLevel_to_log4c_priority(level) <= log4c_category_get_priority(log4c_category_get(module_name))))
 
 /** Skip whitespace in a c-style string. */
 #define SKIPWHITE(cptr) while ((*cptr != '\0') && isspace(*cptr)) cptr++
@@ -221,11 +214,12 @@ void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* l
      char fileName[32];
      char fullpath[32];
      char cat_name[32];
-
+     
+     printf("fileName:%s\n", log_file_name);
      snprintf(cat_name, sizeof(cat_name), "%s", module);
-     snprintf(fileName, sizeof(fileName), "%s.txt", log_file_name + 8);
-     snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, fileName);
-
+     //snprintf(fileName, sizeof(fileName), "%s.txt", log_file_name+8);
+     //snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, fileName);
+     snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name); 
      log4c_category_t* cat = log4c_category_get(cat_name);
      if (!cat) {
          cat = log4c_category_new(cat_name);
@@ -239,7 +233,7 @@ void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* l
 
      rollingfile_udata_t *rudata = rollingfile_make_udata();
      rollingfile_udata_set_logdir(rudata, logdir);
-     rollingfile_udata_set_files_prefix(rudata, fileName);
+     rollingfile_udata_set_files_prefix(rudata, log_file_name);
 
      log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(module);
      if (!policy) {
@@ -506,7 +500,7 @@ void rdk_dbg_priv_LogControlInit(void)
  */
 rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level)
 {
-	if (WANT_LOG(module, level))
+	if(WANT_LOG(module, level))
 	{
 		return TRUE;
 	}
