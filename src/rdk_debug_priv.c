@@ -192,10 +192,10 @@ void rdk_dbg_priv_Init()
 {
     const char* envVar;
 
-    /*if (initLogger("RI"))
+    if (initLogger("LOG.RDK"))
     {
         fprintf(stderr, "%s -- initLogger failure?!\n", __FUNCTION__);
-    }*/
+    }
 
     stackCat = log4c_category_get("LOG.RDK");
 
