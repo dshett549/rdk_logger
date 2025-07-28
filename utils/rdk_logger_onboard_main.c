@@ -49,11 +49,11 @@ int main ()
  {
      rdk_logger_ext_config_t config;
      strncpy(config.fileName, "test.txt", sizeof(config.fileName));
-     strncpy(config.logdir, "/tmp/", sizeof(config.logdir));
-     strncpy(config.module, "TEST", sizeof(config.module));
+     strncpy(config.logdir, "/tmp", sizeof(config.logdir));
+     //strncpy(config.module, "LOG.RDK.TEST", sizeof(config.module));
      config.maxSize = 2024;  // 1 MB
      config.maxCount = 2;
-     config.loglevel = RDK_LOG_INFO;
+     //config.loglevel = RDK_LOG_INFO;
      rdk_logger_ext_init(&config);
      for (int i =0; i < 5000; i++)
      {
@@ -62,8 +62,10 @@ int main ()
          RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.SAMPLE", "SAMPLE_LOG\n");
          RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "errorloh\n");
          RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "LOGGING\n");
+         printf("i:%d\n", i);
          sleep(1);
      }
+     printf("completed for loop\n");
  }
 
 #endif

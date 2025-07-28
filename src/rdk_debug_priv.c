@@ -192,12 +192,12 @@ void rdk_dbg_priv_Init()
 {
     const char* envVar;
 
-    if (initLogger("RI"))
+    /*if (initLogger("RI"))
     {
         fprintf(stderr, "%s -- initLogger failure?!\n", __FUNCTION__);
-    }
+    }*/
 
-    stackCat = log4c_category_get("RI.Stack");
+    stackCat = log4c_category_get("LOG.RDK");
 
     rdk_dbg_priv_LogControlInit();
 
@@ -209,55 +209,49 @@ void rdk_dbg_priv_Init()
     }
 }
 
-void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize)
- {
-     char fileName[32];
-     char fullpath[32];
-     char cat_name[32];
-     
-     printf("fileName:%s\n", log_file_name);
-     snprintf(cat_name, sizeof(cat_name), "%s", module);
-     //snprintf(fileName, sizeof(fileName), "%s.txt", log_file_name+8);
-     //snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, fileName);
-     snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name); 
-     log4c_category_t* cat = log4c_category_get(cat_name);
-     if (!cat) {
-         cat = log4c_category_new(cat_name);
-     }
+void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+{
+    char fullpath[512];
+    snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name);
 
-     log4c_appender_t* app = log4c_appender_get(fullpath);
-     if (!app) {
-         app = log4c_appender_new(fullpath); // Use file path as appender name
-     }
-     log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
+    const char* cat_name = "LOG.RDK";
+    log4c_category_t* cat = log4c_category_get(cat_name);
+    if (!cat) {
+        cat = log4c_category_new(cat_name);
+    }
 
-     rollingfile_udata_t *rudata = rollingfile_make_udata();
-     rollingfile_udata_set_logdir(rudata, logdir);
-     rollingfile_udata_set_files_prefix(rudata, log_file_name);
+    log4c_appender_t* app = log4c_appender_get(fullpath);
+    if (!app) {
+        app = log4c_appender_new(fullpath);
+    }
+    log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
 
-     log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(module);
-     if (!policy) {
-         policy = log4c_rollingpolicy_new(module);
-     }
-     log4c_rollingpolicy_set_type(policy, log4c_rollingpolicy_type_get("sizewin"));
+    rollingfile_udata_t *rudata = rollingfile_make_udata();
+    rollingfile_udata_set_logdir(rudata, logdir);
+    rollingfile_udata_set_files_prefix(rudata, log_file_name);
 
-     rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
-     sizewin_udata_set_file_maxsize(sizewin_udata, maxSize);
-     sizewin_udata_set_max_num_files(sizewin_udata, maxCount);
-     log4c_rollingpolicy_set_udata(policy, sizewin_udata);
+    log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(cat_name);
+    if (!policy) {
+        policy = log4c_rollingpolicy_new(cat_name);
+    }
+    log4c_rollingpolicy_set_type(policy, log4c_rollingpolicy_type_get("sizewin"));
 
-     rollingfile_udata_set_policy(rudata, policy);
-     log4c_appender_set_udata(app, rudata);
+    rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
+    sizewin_udata_set_file_maxsize(sizewin_udata, maxSize);
+    sizewin_udata_set_max_num_files(sizewin_udata, maxCount);
+    log4c_rollingpolicy_set_udata(policy, sizewin_udata);
 
-     log4c_layout_t* layout = log4c_layout_get("comcast_dated");
-     log4c_appender_set_layout(app, layout);
+    rollingfile_udata_set_policy(rudata, policy);
+    log4c_appender_set_udata(app, rudata);
 
-     log4c_category_set_appender(cat, app);
-     //log4c_category_set_priority(cat, get_log4c_log_level(level));
-     printf("rdk_dbg_priv_ext_Init: Logging for module '%s' to file '%s' (maxSize=%ld, maxCount=%ld)\n",
-            module, fullpath, maxSize, maxCount);
- }
+    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+    log4c_appender_set_layout(app, layout);
 
+    log4c_category_set_appender(cat, app);
+
+    printf("rdk_dbg_priv_ext_Init: Logging to file '%s' (maxSize=%ld, maxCount=%ld)\n",
+           fullpath, maxSize, maxCount);
+}
 void rdk_dbg_priv_DeInit()
 {
   stackCat = NULL;
@@ -391,6 +385,8 @@ static int parseLogConfig(const char *cfgStr, uint32_t *configEntry,
             }
 
             logLevel = logNameToEnum(name);
+            printf("logLevel: %d\n", logLevel);
+            printf("Before: config=0x%X\n", config);
             if (logLevel != -1)
             {
                 if (invert)
@@ -414,6 +410,8 @@ static int parseLogConfig(const char *cfgStr, uint32_t *configEntry,
     }
 
     *configEntry = config;
+    printf("Parsed logTypeName: '%s'\n", logTypeName);
+    printf("After: config=0x%X\n", config);
     return rc;
 }
 
@@ -454,6 +452,7 @@ void rdk_dbg_priv_LogControlInit(void)
          if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT)
          {
              (void) parseLogConfig(envVarValue, &defaultConfig, &msg);
+             rdk_g_logControlTbl[0] = defaultConfig;
          }
      }
 #if 0
@@ -669,11 +668,27 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
     rdk_dyn_log_processPendingRequest();
 
     log4c_category_t* parent_cat = log4c_category_get("LOG.RDK");
-     cat = log4c_category_get(module_name);
-     if (cat && log4c_category_get_priority(cat) == LOG4C_PRIORITY_NOTSET && parent_cat) {
-         printf("setting priority:%d\n", log4c_category_get_priority(parent_cat));
-         log4c_category_set_priority(cat, log4c_category_get_priority(parent_cat));
-     }
+    cat = log4c_category_get(module_name);
+    int prio = LOG4C_PRIORITY_FATAL;
+    //int prio = log4c_category_get_priority(parent_cat);
+    printf("log4crc priority:%d\n", log4c_category_get_priority(parent_cat));
+    if (cat && log4c_category_get_priority(cat) == LOG4C_PRIORITY_NOTSET && parent_cat) {
+        uint32_t mask = rdk_g_logControlTbl[0];
+        printf("Default mask from debug.ini: 0x%X\n", mask);
+        for (int i = 0; i < ENUM_RDK_LOG_COUNT; i++) {
+            if (mask & (1 << i)) {
+                prio = rdk_logLevel_to_log4c_priority(i);
+                printf("Set priority\n");
+                break;
+            }
+        }
+        log4c_category_set_priority(parent_cat, prio);
+        printf("Changing log4crc priority:%d\n", log4c_category_get_priority(parent_cat));
+        log4c_category_set_priority(cat, log4c_category_get_priority(parent_cat));
+        printf("Setting default priority from debug.ini :%d\n", prio);
+        //log4c_category_set_priority(cat, rdk_logLevel_to_log4c_priority(rdk_g_logControlTbl[0]));
+        //printf("Setting default priority from debug.ini :%d\n",log4c_category_get_priority(cat));
+    }
 
      if(!cat)
      {
@@ -753,6 +768,7 @@ void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, con
 
     log4c_category_t* cat = log4c_category_get(moduleName);
     if (cat) {
+        printf("Founfd cat\n");
         if (disable) {
             // Set priority higher than TRACE to effectively disable logging for this level
             log4c_category_set_priority(cat, LOG4C_PRIORITY_NOTSET);

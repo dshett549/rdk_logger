@@ -202,10 +202,8 @@ typedef struct rdk_logger_ext_config_t
  {
      char fileName[32];
      char logdir[32];
-     char module[32];
      long maxSize;
      long maxCount;
-     rdk_LogLevel loglevel;
  }rdk_logger_ext_config_t;
 
 /**

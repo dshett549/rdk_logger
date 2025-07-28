@@ -67,7 +67,7 @@ void 			rdk_dbg_priv_DeInit(void);
 void rdk_dbg_priv_Shutdown();
 const char * 	rdk_dbg_priv_LogControlOpSysIntf(char *logName, char *cfgStr);
 const char * 	rdk_dbg_priv_LogQueryOpSysIntf(char *modName, char *cfgStr, int cfgStrMaxLen);
-void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize);
+void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long maxCount, long maxSize);
 void rdk_debug_priv_log_msg( rdk_LogLevel level,
         int module, const char *module_name, const char* format, va_list args);
 void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, const char *loggingLevel, int log_status);

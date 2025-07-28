@@ -32,8 +32,8 @@
 
     <layout name="comcast_dated" type="comcast_dated_nocr"/>
 
-    <appender name="stdout" type="stream_env" layout="basic"/>-->
+    <appender name="stdout" type="stream_env" layout="basic"/>
 
-    <category name="LOG.RDK" priority="warning" appender="stdout"/>
+    <category name="LOG.RDK" priority="warning" appender="RI_rollingfileappender"/>
 
 </log4c>
