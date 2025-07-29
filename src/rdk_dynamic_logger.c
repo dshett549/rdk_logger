@@ -107,7 +107,6 @@ void rdk_dyn_log_processPendingRequest()
 
     if(-1 == g_dl_socket)
         return;
-    printf("calling dyn_log\n");
     memset(&sender_addr,0,sizeof(sender_addr));
     while(1) {
         FD_ZERO(&rfds);

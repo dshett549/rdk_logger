@@ -127,7 +127,6 @@ void rdk_dbgDeinit()
 void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
         const char *format, ...)
 {
-#if !defined(RDK_LOG_DISABLE)
     int num;
     va_list args;
 
@@ -135,7 +134,6 @@ void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
     rdk_debug_priv_log_msg( level, num, module, 
                 format, args);
     va_end(args);
-#endif /* RDK_LOG_DISABLE */
 }
 
 void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module,

@@ -102,12 +102,6 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
 
 rdk_Error rdk_logger_ext_init(rdk_logger_ext_config_t* config)
  {
-     /*if (!cfg || !cfg->module) {
-         printf("Invalid config\n");
-         return;
-     }
-     rdk_dbg_priv_ext_Init(cfg->loglevel, cfg->module, cfg->logdir, cfg->fileName, cfg->maxCount, cfg->maxSize);*/
-
     rdk_Error ret;
     ret = rdk_logger_init("/home/deepthi/DEE-rdklogger/rdk_logger/debug.ini");
     if (ret == RDK_SUCCESS)

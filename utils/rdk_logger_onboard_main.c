@@ -58,11 +58,10 @@ int main ()
      for (int i =0; i < 5000; i++)
      {
          RDK_LOG(RDK_LOG_INFO, "LOG.RDK.DEEP", "DEEPLOG\n");
-         RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.DEEP", "DEBUGLOG\n");
-         RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.SAMPLE", "SAMPLE_LOG\n");
-         RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "errorloh\n");
-         RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "LOGGING\n");
-         printf("i:%d\n", i);
+         //RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.DEEP", "DEBUGLOG\n");
+         //RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.SAMPLE", "SAMPLE_DEBUGLOG\n");
+         RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "errorlog\n");
+         RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "DEBUG_LOGGING\n");
          sleep(1);
      }
      printf("completed for loop\n");
