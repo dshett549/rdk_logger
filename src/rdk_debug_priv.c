@@ -69,7 +69,8 @@
 
 /// Debugging messages are enabled.  Default is enabled (1) and 0 for off.
 static int g_debugEnabled = 1;
-
+log4c_category_t* parent_cat = NULL;
+int parent_prio = 0;
 extern int global_count;
 
 static int rdk_logLevel_to_log4c_priority(int level) {
@@ -139,8 +140,6 @@ rdk_logger_Bool dbg_logViaUDP = FALSE;
 int dbg_udpSocket;
 struct sockaddr_in dbg_logHostAddr;
 
-log4c_category_t* stackCat = NULL;
-
 enum
 {
     /** Used as an array index. */
@@ -159,9 +158,6 @@ static const char *errorMsgs[] =
 /**
  * Initialize Debug API.
  */
-static log4c_category_t* defaultCategory = NULL;
-static log4c_category_t* glibCategory = NULL;
-
 static const log4c_layout_type_t log4c_layout_type_dated_nocr =
 { "dated_nocr", dated_format_nocr, };
 
@@ -197,16 +193,7 @@ void rdk_dbg_priv_Init()
         fprintf(stderr, "%s -- initLogger failure?!\n", __FUNCTION__);
     }
 
-    stackCat = log4c_category_get("LOG.RDK");
-
-    rdk_dbg_priv_LogControlInit();
-
-    /* Try to get logging option. */
-    envVar = rdk_logger_envGet("EnableMPELog");
-    if (NULL != envVar)
-    {
-        g_debugEnabled = (strcasecmp(envVar, "TRUE") == 0);
-    }
+    parent_cat= log4c_category_get("LOG.RDK");
 }
 
 void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long maxCount, long maxSize)
@@ -254,7 +241,7 @@ void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long m
 }
 void rdk_dbg_priv_DeInit()
 {
-  stackCat = NULL;
+  parent_cat = NULL;
 }
 
 /**
@@ -426,67 +413,60 @@ static void printTime(const struct tm *pTm, char *pBuff)
  *
  ****************************************************************************/
 
-/**
- * Initialize the debug log control table. This should be called from
- * the initialization routine of the debug manager.
- */
 void rdk_dbg_priv_LogControlInit(void)
 {
-    char envVarName[128] =
-    { 0 };
+    char envVarName[128] = { 0 };
     const char *envVarValue = NULL;
     uint32_t defaultConfig = 0;
     int mod = 0;
     const char *msg = "";
 
     printf("priv_log_ctrl_init called\n");
-     strncpy(envVarName,"LOG.RDK.DEFAULT",sizeof(envVarName));
-     envVarValue = rdk_logger_envGet(envVarName);
-     if ((envVarValue != NULL) && (envVarValue[0] != 0))
-     {
-         char levelName[32];
-         strncpy(levelName, envVarValue, sizeof(levelName)-1);
-         levelName[sizeof(levelName)-1] = '\0';
-         forceUpperCase(levelName);
-         int lvl = logNameToEnum(levelName);
-         if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT)
-         {
-             (void) parseLogConfig(envVarValue, &defaultConfig, &msg);
-             rdk_g_logControlTbl[0] = defaultConfig;
-         }
-     }
-#if 0
-    /** Pre-condition the control table to disable all logging.  This
-     * means that if no logging control statements are present in the
-     * debug.ini file all logging will be suppressed. */
-    memset(rdk_g_logControlTbl, 0, sizeof(rdk_g_logControlTbl));
 
-    /** Intialize to the default configuration for all modules. */
+    // Set default priority for LOG.RDK
     strncpy(envVarName,"LOG.RDK.DEFAULT",sizeof(envVarName));
     envVarValue = rdk_logger_envGet(envVarName);
     if ((envVarValue != NULL) && (envVarValue[0] != 0))
     {
-        (void) parseLogConfig(envVarValue, &defaultConfig, &msg);
-        for (mod = 1; mod <= global_count; mod++) 
+        char levelName[32];
+        strncpy(levelName, envVarValue, sizeof(levelName)-1);
+        levelName[sizeof(levelName)-1] = '\0';
+        forceUpperCase(levelName);
+        int lvl = logNameToEnum(levelName);
+        if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT)
         {
-            rdk_g_logControlTbl[mod] = defaultConfig;
+            (void) parseLogConfig(envVarValue, &defaultConfig, &msg);
+            rdk_g_logControlTbl[0] = defaultConfig;
+            log4c_category_t* parent_cat = log4c_category_get("LOG.RDK");
+            log4c_category_set_priority(parent_cat, rdk_logLevel_to_log4c_priority(lvl));
+            printf("Setting DEFAULT prio %d to parent_prio\n", rdk_logLevel_to_log4c_priority(lvl));
+            printf("PARENT_PRIO = %d\n", log4c_category_get_priority(parent_cat));
+            parent_prio = log4c_category_get_priority(parent_cat);
         }
     }
 
-    /** Configure each module from the ini file. Note: It is not an
-     * error to have no entry in the ini file for a module - we simply
-     * leave it at the default logging. */
+    // Now set priority for each module from debug.ini
     for (mod = 1; mod <= global_count; mod++)
     {
-       /** Get the logging level */
+        const char* modName = rdk_logger_envGetModFromNum(mod);
         envVarValue = rdk_logger_envGetValueFromNum(mod);
-        if ((envVarValue != NULL) && (envVarValue[0] != '\0'))
+        if (modName && envVarValue && envVarValue[0] != '\0')
         {
-            (void) parseLogConfig(envVarValue, &rdk_g_logControlTbl[mod],
-                    &msg);
+            char levelName[32];
+            strncpy(levelName, envVarValue, sizeof(levelName)-1);
+            levelName[sizeof(levelName)-1] = '\0';
+            forceUpperCase(levelName);
+            int lvl = logNameToEnum(levelName);
+            if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT)
+            {
+                log4c_category_t* cat = log4c_category_get(modName);
+                if (cat) {
+                    log4c_category_set_priority(cat, rdk_logLevel_to_log4c_priority(lvl));
+                    printf("Set priority for %s to %d\n", modName, rdk_logLevel_to_log4c_priority(lvl));
+                }
+            }
         }
     }
-#endif
 }
 
 /**
@@ -667,70 +647,55 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
     /* Handling process request here. This is not a blocking call and it shall return immediately */
     rdk_dyn_log_processPendingRequest();
 
-    log4c_category_t* parent_cat = log4c_category_get("LOG.RDK");
     cat = log4c_category_get(module_name);
-    int prio = LOG4C_PRIORITY_FATAL;
-    //int prio = log4c_category_get_priority(parent_cat);
+    printf("cat_priority:%d\n", log4c_category_get_priority(cat));
     printf("log4crc priority:%d\n", log4c_category_get_priority(parent_cat));
     if (cat && log4c_category_get_priority(cat) == LOG4C_PRIORITY_NOTSET && parent_cat) {
-        uint32_t mask = rdk_g_logControlTbl[0];
-        printf("Default mask from debug.ini: 0x%X\n", mask);
-        for (int i = 0; i < ENUM_RDK_LOG_COUNT; i++) {
-            if (mask & (1 << i)) {
-                prio = rdk_logLevel_to_log4c_priority(i);
-                printf("Set priority\n");
-                break;
-            }
-        }
-        log4c_category_set_priority(parent_cat, prio);
-        printf("Changing log4crc priority:%d\n", log4c_category_get_priority(parent_cat));
-        log4c_category_set_priority(cat, log4c_category_get_priority(parent_cat));
-        printf("Setting default priority from debug.ini :%d\n", prio);
-        //log4c_category_set_priority(cat, rdk_logLevel_to_log4c_priority(rdk_g_logControlTbl[0]));
-        //printf("Setting default priority from debug.ini :%d\n",log4c_category_get_priority(cat));
+        printf("setting parentprio:%dn", parent_prio);
+        log4c_category_set_priority(cat, parent_prio);
     }
 
      if(!cat)
      {
          printf("category not found, setting to LOG.RDK\n");
-         cat = log4c_category_get("LOG.RDK");
+         cat = log4c_category_get(parent_cat);
      }
 
      printf("Logging to category: %s, priority: %d, level:%d\n", log4c_category_get_name(cat), log4c_category_get_priority(cat), level);
      printf("mapped level:%d\n",rdk_logLevel_to_log4c_priority(level));
      if(!cat)
          return;
-    if (!WANT_LOG(module_name, level))
+    /*if (!WANT_LOG(module_name, level))
     {
         printf("skipping log\n");
         return;
-    }
+    }*/
 
     switch (level)
     {
     case RDK_LOG_FATAL:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_FATAL, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_FATAL, format, args);
         break;
     case RDK_LOG_ERROR:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_ERROR, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_ERROR, format, args);
         break;
     case RDK_LOG_WARN:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_WARN, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_WARN, format, args);
         break;
     case RDK_LOG_NOTICE:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_NOTICE, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_NOTICE, format, args);
         break;
     case RDK_LOG_INFO:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_INFO, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_INFO, format, args);
         break;
     case RDK_LOG_DEBUG:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_DEBUG, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_DEBUG, format, args);
         break;
     case RDK_LOG_TRACE:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_TRACE, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_TRACE, format, args);
         break;
     default:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_DEBUG, format, args);
+        log4c_category_log(cat, LOG4C_PRIORITY_DEBUG, format, args);
         break;
     }
 }
@@ -771,7 +736,7 @@ void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, con
         printf("Founfd cat\n");
         if (disable) {
             // Set priority higher than TRACE to effectively disable logging for this level
-            log4c_category_set_priority(cat, LOG4C_PRIORITY_NOTSET);
+            log4c_category_set_priority(cat, parent_prio);
         }
         else {
             //rdk_logger_enable_logLevel(moduleName, RDK_LOG_DEBUG, 1);
@@ -807,11 +772,6 @@ static int initLogger(char *category)
     {
         fprintf(stderr, "log4c_init() failed?!");
         return -1;
-    }
-    else
-    {
-        defaultCategory = log4c_category_get(category);
-        glibCategory = log4c_category_get("RI.GLib");
     }
 
     return 0;

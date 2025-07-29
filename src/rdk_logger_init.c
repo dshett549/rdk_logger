@@ -67,14 +67,14 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
             debugConfigFile = DEBUG_CONF_FILE;
         }
 
+        rdk_dbgInit();
         ret = rdk_logger_env_add_conf_file(debugConfigFile);
         if ( RDK_SUCCESS != ret)
         {
             printf("%s:%d Adding debug config file %s failed\n", __FUNCTION__, __LINE__, debugConfigFile);
             return ret;
         }
-
-        rdk_dbgInit();
+        rdk_dbg_priv_LogControlInit();
         rdk_dyn_log_init();
 
         snprintf(buf, BUF_LEN-1, "/tmp/%s", "debugConfigFile_read");
