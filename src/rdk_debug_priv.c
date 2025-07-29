@@ -90,7 +90,7 @@ static int rdk_logLevel_to_log4c_priority(int level) {
  * Returns 1 if logging has been requested for the corresponding module (mod)
  * and level (lvl) combination. To be used in rdk_dbg_priv_* files ONLY.
  */
-#define WANT_LOG(module_name, level) \
+#define IS_LOGGING_ENABLED_FOR_LEVEL(module_name, level) \
     (log4c_category_get(module_name) && \
      (rdk_logLevel_to_log4c_priority(level) <= log4c_category_get_priority(log4c_category_get(module_name))))
 
@@ -469,7 +469,7 @@ void rdk_dbg_priv_LogControlInit(void)
  */
 rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level)
 {
-	if(WANT_LOG(module, level))
+	if(IS_LOGGING_ENABLED_FOR_LEVEL(module, level))
 	{
 		return TRUE;
 	}
@@ -542,7 +542,7 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *moduleName, rdk_LogLevel 
 
         rdk_dbg_priv_SetLogLevelString(moduleName, logLevelName);
 
-	if (WANT_LOG(moduleName, logLevel))
+	if (IS_LOGGING_ENABLED_FOR_LEVEL(moduleName, logLevel))
 	{
 		return TRUE;
 	}
@@ -654,7 +654,7 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
     if(!cat)
         return;
 
-    if (!WANT_LOG(module_name, level))
+    if (!IS_LOGGING_ENABLED_FOR_LEVEL(module_name, level))
     {
         printf("skipping log\n");
         return;
