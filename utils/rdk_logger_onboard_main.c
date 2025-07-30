@@ -26,7 +26,6 @@
 
 #define MAX_BUF_SIZE 1024
 
-#if 0
 int main( int argc, char **argv)
 {
     char msg[MAX_BUF_SIZE];
@@ -43,8 +42,7 @@ int main( int argc, char **argv)
 
     return 0;
 }
-#endif
-
+#if 0
 int main ()
  {
      rdk_logger_ext_config_t config;
@@ -55,6 +53,7 @@ int main ()
      config.maxCount = 2;
      //config.loglevel = RDK_LOG_INFO;
      rdk_logger_ext_init(&config);
+     //rdk_logger_init("/home/deepthi/DEE-rdklogger/rdk_logger/debug.ini");
      for (int i =0; i < 5000; i++)
      {
          RDK_LOG(RDK_LOG_INFO, "LOG.RDK.DEEP", "DEEPLOG\n");
@@ -66,5 +65,5 @@ int main ()
      }
      printf("completed for loop\n");
  }
-
+#endif
 #endif
