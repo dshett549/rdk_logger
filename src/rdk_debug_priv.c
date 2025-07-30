@@ -235,9 +235,6 @@ void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long m
     log4c_appender_set_layout(app, layout);
 
     log4c_category_set_appender(cat, app);
-
-    printf("rdk_dbg_priv_ext_Init: Logging to file '%s' (maxSize=%ld, maxCount=%ld)\n",
-           fullpath, maxSize, maxCount);
 }
 void rdk_dbg_priv_DeInit()
 {
@@ -452,7 +449,6 @@ void rdk_dbg_priv_LogControlInit(void)
                 log4c_category_t* cat = log4c_category_get(modName);
                 if (cat) {
                     log4c_category_set_priority(cat, rdk_logLevel_to_log4c_priority(lvl));
-                    printf("Set priority for %s to %d\n", modName, rdk_logLevel_to_log4c_priority(lvl));
                 }
             }
         }
@@ -644,19 +640,14 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
 
     if(!cat)
     {
-        printf("category not found, setting to LOG.RDK\n");
         cat = log4c_category_get(parent_cat);
     }
-
-    printf("Logging to category: %s, priority: %d, level:%d\n", log4c_category_get_name(cat), log4c_category_get_priority(cat), level);
-    printf("Requested priority:%d\n",rdk_logLevel_to_log4c_priority(level));
 
     if(!cat)
         return;
 
     if (!IS_LOGGING_ENABLED_FOR_LEVEL(module_name, level))
     {
-        printf("skipping log\n");
         return;
     }
 
@@ -727,7 +718,6 @@ void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, con
         }
         else {
             log4c_category_set_priority(cat, prio);
-            printf("Updated moduleName:%s to priority = %d\n", moduleName, log4c_category_get_priority(cat));
         }
     }
 }
