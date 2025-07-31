@@ -32,7 +32,7 @@
 
     <layout name="comcast_dated" type="comcast_dated_nocr"/>
 
-    <appender name="stdout" type="stream_env" layout="basic"/>
+    <appender name="stdout" type="stream_env" layout="comcast_dated"/>
 
     <category name="LOG.RDK" priority="warning" appender="stdout"/>
 

@@ -103,7 +103,7 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
 rdk_Error rdk_logger_ext_init(rdk_logger_ext_config_t* config)
  {
     rdk_Error ret;
-    ret = rdk_logger_init("/home/deepthi/DEE-rdklogger/rdk_logger/debug.ini");
+    ret = rdk_logger_init("/etc/debug.ini");
     if (ret == RDK_SUCCESS)
     {
         rdk_dbg_priv_ext_Init(config->logdir, config->fileName, config->maxCount, config->maxSize);
