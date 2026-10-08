@@ -34,10 +34,27 @@
 #define DEVICE_ONBOARDED        "/nvram/.device_onboarded"
 #define DISABLE_ONBOARDING      "/nvram/DISABLE_ONBOARD_LOGGING"
 
+static void sanitize_log_message(char *value)
+{
+    if(value == NULL)
+        return;
+
+    while(*value != '\0') 
+    {
+        unsigned char ch = (unsigned char)*value;
+        if(ch < 0x20 || ch == 0x7f)
+        {
+            *value = ' ';
+        }
+        value++;
+    }
+}
+
 void rdk_logger_log_onboard(const char *module, const char *msg, ...)
 {
     va_list arg_ptr;
     char buf[MAX_BUF_SIZE];
+    char safe_module[MAX_BUF_SIZE];
     int nbytes;
     struct tm * l_sTimeInfo;
     char l_cLocalTime[32] = {0};
@@ -48,6 +65,8 @@ void rdk_logger_log_onboard(const char *module, const char *msg, ...)
     {
         return;
     }
+    if(msg == NULL)
+        return;
 
     time(&l_sNowTime);
     l_sTimeInfo = localtime(&l_sNowTime);
@@ -57,7 +76,11 @@ void rdk_logger_log_onboard(const char *module, const char *msg, ...)
     nbytes = vsnprintf(buf, MAX_BUF_SIZE, msg, arg_ptr);
     va_end(arg_ptr);
 
-    if( nbytes >=  MAX_BUF_SIZE )
+    if( nbytes < 0 )
+    {
+        buf[0] = '\0';
+    }
+    else if( nbytes >=  MAX_BUF_SIZE )
     {
         buf[ MAX_BUF_SIZE - 1 ] = '\0';
     }
@@ -66,16 +89,22 @@ void rdk_logger_log_onboard(const char *module, const char *msg, ...)
         buf[nbytes] = '\0';
     }
 
+    sanitize_log_message(buf);
+    if(module != NULL) {
+        snprintf(safe_module, sizeof(safe_module), "%s", module);
+        sanitize_log_message(safe_module);
+    }
+
     l_fOnBoardingLogFile = fopen(ONBOARDING_LOG_FILE, "a+");
     if (NULL != l_fOnBoardingLogFile)
     {
         if(module != NULL)
         {
-            fprintf(l_fOnBoardingLogFile, "%s [%s] %s", l_cLocalTime, module, buf);
+            fprintf(l_fOnBoardingLogFile, "%s [%s] %s\n", l_cLocalTime, safe_module, buf);
         }
         else
         {
-            fprintf(l_fOnBoardingLogFile, "%s %s", l_cLocalTime, buf);
+            fprintf(l_fOnBoardingLogFile, "%s %s\n", l_cLocalTime, buf);
         }
         fclose(l_fOnBoardingLogFile);
     }
@@ -83,11 +112,11 @@ void rdk_logger_log_onboard(const char *module, const char *msg, ...)
     {
         if(module != NULL)
         {
-            printf("%s [%s] %s", l_cLocalTime, module, buf);
+            printf("%s [%s] %s\n", l_cLocalTime, safe_module, buf);
         }
         else
         {
-            printf("%s %s", l_cLocalTime, buf);
+            printf("%s %s\n", l_cLocalTime, buf);
         }
     }
 }
