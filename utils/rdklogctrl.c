@@ -2,18 +2,15 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
 #include <sys/socket.h>
-#include <sys/wait.h>
-#include <arpa/inet.h>
+#include <sys/un.h>
 #include <unistd.h>
+#include <dirent.h>
 #include "rdk_dynamic_logger.h"
 
 #define COMP_SIGNATURE "LOG.RDK."
 #define COMP_SIGNATURE_LEN 8
-#define DL_PORT 12035
+#define DL_SOCKET_DIR "/run/rdk_logger"
 #define DL_SIGNATURE "COMC"
 #define DL_SIGNATURE_LEN 4
 
@@ -58,8 +55,13 @@ static int8_t validate_loglevel(const char* level)
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_in dest_addr;
-    int i, sockfd, numbytes, app_len, comp_len, optval = 1;
+    struct sockaddr_un dest_addr;
+    struct dirent *entry;
+    DIR *socket_dir;
+    int i, sockfd, sent = 0;
+    size_t app_len, comp_len;
+    long process_id;
+    char *suffix;
     int8_t level = -1;
     unsigned char buf[128] = {0};
 
@@ -84,20 +86,25 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+    app_len = strlen(argv[1]);
+    comp_len = strlen(argv[2]);
+    if(app_len == 0 || app_len > sizeof(buf) - (DL_SIGNATURE_LEN + 4) ||
+            comp_len > sizeof(buf) - (DL_SIGNATURE_LEN + 4) - app_len) {
+        fprintf(stderr, "App and module names exceed packet size or app name is empty\n");
+        return -1;
+    }
+    if(geteuid() != 0) {
+        fprintf(stderr, "rdklogctrl requires root privileges\n");
+        return -1;
+    }
+
+    if ((sockfd = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
         printf("socket: %s\n",strerror(errno));
         return -1;
     }
 
-    if(setsockopt(sockfd,SOL_SOCKET,SO_BROADCAST,(char *) &optval,sizeof(optval))){
-        printf("Error setting socket to BROADCAST mode %s\n",strerror(errno));
-        return -1;
-    }
-
     memset(&dest_addr,0,sizeof(dest_addr));
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port=htons((unsigned short) DL_PORT);
-    dest_addr.sin_addr.s_addr=inet_addr("127.255.255.255");
+    dest_addr.sun_family = AF_UNIX;
 
     /* Dynamic log signature 'COMC' */
     i = DL_SIGNATURE_LEN;
@@ -107,14 +114,12 @@ int main(int argc, char *argv[])
     buf[++i] = (uint8_t)level;
 
     /* App name length */
-    app_len = strlen(argv[1]);
     buf[++i] = app_len;
 
     /* App name */
     memcpy(buf+(++i),argv[1],app_len);
 
     /* Module name length */
-    comp_len = strlen(argv[2]);
     i +=  app_len;
     buf[i] = comp_len;
 
@@ -134,13 +139,32 @@ int main(int argc, char *argv[])
 
 #define DL_PACKET_LEN buf[4]+DL_SIGNATURE_LEN+1
 
-    if ((numbytes=sendto(sockfd, buf, DL_PACKET_LEN, 0, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr))) == -1) {
-        printf("sendto: %s\n",strerror(errno));
+    socket_dir = opendir(DL_SOCKET_DIR);
+    if(socket_dir == NULL) {
+        fprintf(stderr, "opendir: %s\n",strerror(errno));
+        close(sockfd);
+        return -1;
+    }
+
+    while((entry = readdir(socket_dir)) != NULL) {
+        process_id = strtol(entry->d_name, &suffix, 10);
+        if(process_id <= 0 || strcmp(suffix, ".sock") != 0)
+            continue;
+        if(snprintf(dest_addr.sun_path, sizeof(dest_addr.sun_path),
+                DL_SOCKET_DIR "/%s", entry->d_name) >= (int)sizeof(dest_addr.sun_path))
+            continue;
+        if(sendto(sockfd, buf, DL_PACKET_LEN, 0,
+                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) != -1)
+            ++sent;
+    }
+    closedir(socket_dir);
+    close(sockfd);
+    if(sent == 0) {
+        fprintf(stderr, "No dynamic logger sockets accepted the request\n");
         return -1;
     }
 
     printf( "Sent message to update log level of %s for %s process\n", argv[2], argv[1]);
-    close(sockfd);
     return 0;
 }
 
