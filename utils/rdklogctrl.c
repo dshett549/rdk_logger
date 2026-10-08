@@ -59,7 +59,8 @@ static int8_t validate_loglevel(const char* level)
 int main(int argc, char *argv[])
 {
     struct sockaddr_in dest_addr;
-    int i, sockfd, numbytes, app_len, comp_len, optval = 1;
+    int i, sockfd, numbytes, optval = 1;
+    size_t app_len, comp_len;
     int8_t level = -1;
     unsigned char buf[128] = {0};
 
@@ -84,6 +85,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    app_len = strlen(argv[1]);
+    comp_len = strlen(argv[2]);
+    if(app_len > sizeof(buf) - (DL_SIGNATURE_LEN + 4) || comp_len > sizeof(buf) - (DL_SIGNATURE_LEN + 4) - app_len) 
+    {
+        fprintf(stderr, "App and module names exceed packet size\n");
+        return -1;
+    }
+    
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         printf("socket: %s\n",strerror(errno));
         return -1;
