@@ -114,7 +114,9 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), 0, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_DONTWAIT, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+                break;
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
             return;
         }
